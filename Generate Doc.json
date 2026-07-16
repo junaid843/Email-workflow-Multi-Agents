@@ -1,0 +1,204 @@
+{
+  "name": "Generate Doc",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"title\": \"string\",\n  \"content\": \"string\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "991156df-d5fb-4a8c-93fe-db89cee1928d",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "folderId": "1kuh5Mjwg2zeDgPREKLpdWai-T63yIFNJ",
+        "title": "={{ $json.title }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "808c1aa3-3bd6-40ac-8abc-38d40d5d164b",
+      "name": "Create Google Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "DdDbBb3ziTZAPjTJ",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.input !== undefined ? $json.input : $json;\n\nlet parsed;\nif (typeof raw === 'string') {\n  try {\n    parsed = JSON.parse(raw );\n  } catch(e) {\n    parsed = { content: raw };\n  }\n} else {\n  parsed = raw;\n}\n\nlet title = (\n  parsed.title ||\n  parsed.query ||\n  $json.title ||\n  'Untitled'\n).replace(/^#+\\s*/, '').trim();\n\nlet content =\n  parsed.content ||\n  parsed.text ||\n  parsed.output ||\n  parsed.article ||\n  $json.content ||\n  '';\n\nif (typeof content === 'string' && content.trim().startsWith('{')) {\n  try {\n    const inner = JSON.parse(content);\n    content = inner.content || inner.text || inner.output || content;\n  } catch(e) {}\n}\n\nif (typeof content === 'object' && content !== null) {\n  content = content.content || content.text || content.output || JSON.stringify(content);\n}\n\ncontent = String(content || '').trim();\n\nif (!content) {\n  throw new Error('Could not extract content. Raw input received: ' + JSON.stringify($json).substring(0, 300));\n}\n\nreturn [{ json: { title, content } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "bfe6d3a9-2f3a-463c-abc2-30798a658a21",
+      "name": "Parse Input"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81b20897-1707-479e-b205-bb4b962ccf96",
+              "name": "status",
+              "value": "done",
+              "type": "string"
+            },
+            {
+              "id": "c8628a75-5816-47bf-a0af-44e52a312db3",
+              "name": "documentId",
+              "value": "={{ $('Format Content').item.json.documentId }}",
+              "type": "string"
+            },
+            {
+              "id": "8bc057ca-0606-4a07-9982-d1f4a0dfe5b8",
+              "name": "downloadUrl",
+              "value": "={{ 'https://docs.google.com/document/d/' + $('Format Content').first().json.documentId + '/export?format=docx' }}",
+              "type": "string"
+            },
+            {
+              "id": "6d176ec3-fde8-4447-8363-2472cda7de49",
+              "name": "pdfUrl",
+              "value": "={{ 'https://docs.google.com/document/d/' + $('Format Content').first().json.documentId + '/export?format=pdf' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "72e51f42-a25e-4ec3-b107-03a8d75feedf",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// # → HEADING_1 (24pt bold)\n// ## → HEADING_2 (18pt bold)\n// ### → HEADING_3 (14pt bold)\n// #### → HEADING_4 (12pt bold)\n// normal text → NORMAL_TEXT (11pt)\n// ─────────────────────────────────────────────────────────\n\nconst docNode = $('Create Google Doc').first().json;\nconst documentId = docNode.documentId || docNode.id;\n\nconst inputNode = $('Parse Input').first().json;\nconst rawContent = inputNode.content || '';\n\nif (!rawContent) {\n  throw new Error('Content is empty in Build Requests node');\n}\n\nconst lines = rawContent.split('\\n');\nconst requests = [];\nlet cursor = 1;\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n\n  // Blank line → insert empty paragraph\n  if (!trimmed) {\n    requests.push({\n      insertText: { location: { index: cursor }, text: '\\n' }\n    });\n    cursor += 1;\n    continue;\n  }\n\n  let text, style, fontSize, bold;\n\n  if (trimmed.startsWith('#### ')) {\n    text = trimmed.replace(/^#### /, '');\n    style = 'HEADING_4'; fontSize = 12; bold = true;\n  } else if (trimmed.startsWith('### ')) {\n    text = trimmed.replace(/^### /, '');\n    style = 'HEADING_3'; fontSize = 14; bold = true;\n  } else if (trimmed.startsWith('## ')) {\n    text = trimmed.replace(/^## /, '');\n    style = 'HEADING_2'; fontSize = 18; bold = true;\n  } else if (trimmed.startsWith('# ')) {\n    text = trimmed.replace(/^# /, '');\n    style = 'HEADING_1'; fontSize = 24; bold = true;\n  } else {\n    text = trimmed;\n    style = 'NORMAL_TEXT'; fontSize = 11; bold = false;\n  }\n\n  const insertedText = text + '\\n';\n  const endIndex = cursor + insertedText.length;\n\n  // 1. Insert text\n  requests.push({\n    insertText: {\n      location: { index: cursor },\n      text: insertedText\n    }\n  });\n\n  // 2. Paragraph style\n  requests.push({\n    updateParagraphStyle: {\n      range: { startIndex: cursor, endIndex: endIndex },\n      paragraphStyle: {\n        namedStyleType: style,\n        spaceAbove: { magnitude: style !== 'NORMAL_TEXT' ? 14 : 4, unit: 'PT' },\n        spaceBelow: { magnitude: style !== 'NORMAL_TEXT' ? 6 : 4, unit: 'PT' }\n      },\n      fields: 'namedStyleType,spaceAbove,spaceBelow'\n    }\n  });\n\n  // 3. Text style\n  const textStyle = {\n    fontSize: { magnitude: fontSize, unit: 'PT' },\n    weightedFontFamily: { fontFamily: 'Arial' }\n  };\n  if (bold) textStyle.bold = true;\n\n  requests.push({\n    updateTextStyle: {\n      range: { startIndex: cursor, endIndex: endIndex - 1 },\n      textStyle: textStyle,\n      fields: bold ? 'bold,fontSize,weightedFontFamily' : 'fontSize,weightedFontFamily'\n    }\n  });\n\n  cursor = endIndex;\n}\n\nreturn [{ json: { documentId, requests } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "9d44c314-3d92-486b-b1c0-d26dd2d696f4",
+      "name": "Format Content"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $json.documentId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        0
+      ],
+      "id": "9182bed5-a022-45b2-9122-1444843b33b7",
+      "name": "Insert Content",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "DdDbBb3ziTZAPjTJ",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Format Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Content": {
+      "main": [
+        [
+          {
+            "node": "Insert Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Content": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "495c6d05-258c-465f-b4d9-e4f08dd2c6c7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0106b7dab87b69124091a35f3051647071c4cf7daea2c3a31ae2ed7e359d3bdf"
+  },
+  "nodeGroups": [],
+  "id": "ZCcswKANUFXoBiyk",
+  "tags": []
+}

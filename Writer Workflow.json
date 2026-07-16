@@ -1,0 +1,94 @@
+{
+  "name": "Writer Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "You are an expert content writer specializing in professional, informative, and well-structured articles.\n\nINPUT HANDLING\n\nYou will receive research data containing the following sections:\n\n* Topic\n* Summary\n* Key Points\n* Statistics\n* Sources\n\nThe research data may be wrapped inside arrays or objects. Always locate and extract the research content before writing.\n\nIf research content exists, proceed with article generation immediately.\n\nOnly report missing data if no research content is provided at all.\n\nARTICLE REQUIREMENTS\n\n1. Use the Topic as the article title.\n2. Use the Summary to create a compelling introduction.\n3. Expand every Key Point into detailed explanatory paragraphs.\n4. Incorporate Statistics naturally within the content.\n5. Reference information from Sources when relevant, but do not simply list URLs throughout the article.\n6. Maintain a professional, informative, and engaging tone.\n7. Write approximately 500 words.\n8. Use clear headings and subheadings.\n9. Include:\n\n   * Introduction\n   * Main Sections\n   * Practical Applications or Benefits (when applicable)\n   * Conclusion\n   * References\n\nOUTPUT RULES\n\n* Output ONLY the final article.\n* Do NOT repeat the input data.\n* Output JSON in this format: title, content.\n* Do NOT output the original Topic, Summary, Key Points, Statistics, or Sources as separate sections.\n* Do NOT explain your process.\n* Do NOT include phrases such as:\n\n  * \"Data is missing\"\n  * \"Input not provided\"\n  * \"Based on the provided information\"\n  * \"The input contains\"\n* Do NOT include source URLs in the body unless specifically relevant.\n* Start directly with the article title.\n\nQUALITY STANDARDS\n\n* Ensure smooth flow between sections.\n* Avoid repetition.\n* Use concise and professional language.\n* Make the article publication-ready."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "782aa58f-cf66-4edc-9444-1bda8a4b6a9d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "48202d11-6b65-4271-a741-401c9dc0870d",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        224,
+        224
+      ],
+      "id": "52e895b5-0113-4bef-9942-8680cb0ca172",
+      "name": "LLM",
+      "credentials": {
+        "openRouterApi": {
+          "id": "52uvBKM7sYRQXnSy",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "2369fcb4-606e-4288-be69-069e3760b627",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0106b7dab87b69124091a35f3051647071c4cf7daea2c3a31ae2ed7e359d3bdf"
+  },
+  "nodeGroups": [],
+  "id": "j5FrPUQUUKTLftwD",
+  "tags": []
+}

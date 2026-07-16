@@ -1,0 +1,253 @@
+{
+  "name": "Supervisor Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dee421e2-17bc-4827-812c-d3f0fbdf1d9d",
+      "name": "When chat message received",
+      "webhookId": "c7b4298d-3fb0-41f9-b923-04d884839836"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a supervisor agent. Your job is to only call relevant tools. For writing any topic, you will call the research tool. for any generic questions, answer yourself.\n\nDo NOT write articles, passage or do any writing or research related tasks by yourself. Always trigger the relevant tools.\n\nAfter the research workflow is called, trigger the writer workflow for the writing task. Do NOT write anything by yourself.\n\nWhen the writing related task are done, ask the user for the file format (like pdf or doc). Then generate the document by triggering the generate doc workflow and send the relevant link."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "72e896d1-bd41-45b1-b209-cc955c8f71ed",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool for every research related tasks.",
+        "workflowId": {
+          "__rl": true,
+          "value": "tXjzghksa0BdmQY1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/tXjzghksa0BdmQY1",
+          "cachedResultName": "Research Workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        224
+      ],
+      "id": "bc0297e6-eace-4470-978a-36f4c9bf07cc",
+      "name": "Call 'Research Workflow'"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        224
+      ],
+      "id": "1755c89c-9cf3-4c03-abbd-a8305a0f3492",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "j5FrPUQUUKTLftwD",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/j5FrPUQUUKTLftwD",
+          "cachedResultName": "Writer Workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        224
+      ],
+      "id": "fdcca42e-ae6d-4594-a0d1-b526ab9cf957",
+      "name": "Call 'Writer Workflow'"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        224,
+        224
+      ],
+      "id": "0a5e746a-be75-40bf-9437-2bf1063cd300",
+      "name": "LLM",
+      "credentials": {
+        "openRouterApi": {
+          "id": "52uvBKM7sYRQXnSy",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Call this for generating documents. This workflow return two documents: doc and pdf",
+        "workflowId": {
+          "__rl": true,
+          "value": "ZCcswKANUFXoBiyk",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZCcswKANUFXoBiyk",
+          "cachedResultName": "Generate Doc"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', ``, 'string') }}",
+            "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('content', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        224
+      ],
+      "id": "641e9550-47b4-467a-a0c9-ca2671239c2f",
+      "name": "Call 'Generate Doc'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Research Workflow'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Writer Workflow'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Generate Doc'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "b70a9bc8-5855-4c29-9598-33cac1bb65ce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0106b7dab87b69124091a35f3051647071c4cf7daea2c3a31ae2ed7e359d3bdf"
+  },
+  "nodeGroups": [],
+  "id": "1O67YZeNtR5bFZyl",
+  "tags": []
+}

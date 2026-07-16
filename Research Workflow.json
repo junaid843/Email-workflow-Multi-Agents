@@ -1,0 +1,128 @@
+{
+  "name": "Research Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "You are a professional researcher.\n\nDo Not generate results on your own \nUse external tools for searching\n\nYour task:\n1. Analyze search results.\n2. Extract key facts.\n3. Extract statistics.\n4. Create structured research notes.\n\nReturn ONLY valid JSON.\n\nDo NOT wrap in string.\nDo NOT use markdown.\nDo NOT use explanations.\n\nOutput format:\n\n{\n  \"topic\": \"\",\n  \"summary\": \"\",\n  \"key_points\": [],\n  \"statistics\": [],\n  \"sources\": []\n}\n\nThe output MUST be returned in this format."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "11a10611-e6f2-408c-98ea-5a7e7208a5c0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "028b23cf-470d-48bd-a315-e66b74b6cb84",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        224,
+        224
+      ],
+      "id": "cfbeacf2-37d7-4da7-b3a7-47eadf368641",
+      "name": "LLM",
+      "credentials": {
+        "openRouterApi": {
+          "id": "52uvBKM7sYRQXnSy",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "google search in SerpApi",
+        "q": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query__q_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        368,
+        224
+      ],
+      "id": "1e118071-e95e-4e32-8bac-3061a747b32a",
+      "name": "SerpApi",
+      "credentials": {
+        "serpApi": {
+          "id": "uu33R9Z4aQJxvNz4",
+          "name": "SerpApi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "bad357d8-0bd4-4f67-a655-6c5b75b36258",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0106b7dab87b69124091a35f3051647071c4cf7daea2c3a31ae2ed7e359d3bdf"
+  },
+  "nodeGroups": [],
+  "id": "tXjzghksa0BdmQY1",
+  "tags": []
+}
